@@ -1,0 +1,40 @@
+{
+    "type": "Program",
+    "statements": [
+        {
+            "FunctionStatement": {
+                "type": "FunctionStatement",
+                "name": {
+                    "type": "IdentifierLiteral",
+                    "value": "mukhya"
+                },
+                "return_type": "ank",
+                "parameters": [],
+                "body": {
+                    "type": "BlockStatement",
+                    "statements": [
+                        {
+                            "type": "LetStatement",
+                            "name": {
+                                "type": "IdentifierLiteral",
+                                "value": "a"
+                            },
+                            "value": {
+                                "type": "IntegerLiteral",
+                                "value": 4
+                            },
+                            "value_type": null
+                        },
+                        {
+                            "type": "ReturnStatement",
+                            "return_value": {
+                                "type": "IdentifierLiteral",
+                                "value": "a"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
