@@ -4,9 +4,9 @@ from typing import Callable
 from enum import Enum, auto
 
 from AST import Statement, Expression , Program
-from AST import ExpressionStatement, LetStatement, FunctionStatement,  ReturnStatement, BlockStatement
+from AST import ExpressionStatement, LetStatement, FunctionStatement,  ReturnStatement, BlockStatement, AssignStatement , IfStatement
 from AST import InfixExpression
-from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
+from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
 
 #Prodecure types
 class PrecedenceType(Enum):
@@ -29,6 +29,12 @@ PRECEDENCES: dict[TokenType, PrecedenceType] = {
     TokenType.ASTERISK: PrecedenceType.P_PRODUCT,
     TokenType.MODULUS: PrecedenceType.P_PRODUCT,
     TokenType.POW: PrecedenceType.P_EXPONENT,
+    TokenType.EQ_EQ : PrecedenceType.P_EQULALS,
+    TokenType.NOT_EQ : PrecedenceType.P_EQULALS,
+    TokenType.LT : PrecedenceType.P_LESSGREATER,
+    TokenType.GT : PrecedenceType.P_LESSGREATER,
+    TokenType.LT_EQ : PrecedenceType.P_LESSGREATER,
+    TokenType.GT_EQ : PrecedenceType.P_LESSGREATER,
 }
 
 class Parser:
@@ -42,7 +48,10 @@ class Parser:
             TokenType.IDENT: self.__parse_identifier,
             TokenType.INT: self.__parse_int_literal,
             TokenType.FLOAT: self.__parse_float_literal,
-            TokenType.LPAREN: self.__parse_grouped_expression
+            TokenType.LPAREN: self.__parse_grouped_expression,
+            TokenType.IF: self.__parse_if_statement,
+            TokenType.TRUE: self.__parse_boolean,
+            TokenType.FALSE: self.__parse_boolean,
         }
         self.infix_parse_fns: dict[TokenType, Callable] = {
             TokenType.PLUS: self.__parse_infix_expression,
@@ -50,7 +59,13 @@ class Parser:
             TokenType.SLASH: self.__parse_infix_expression,
             TokenType.ASTERISK: self.__parse_infix_expression,
             TokenType.POW: self.__parse_infix_expression,
-            TokenType.MODULUS: self.__parse_infix_expression
+            TokenType.MODULUS: self.__parse_infix_expression,
+            TokenType.EQ_EQ : self.__parse_infix_expression,
+            TokenType.NOT_EQ : self.__parse_infix_expression,
+            TokenType.LT : self.__parse_infix_expression,
+            TokenType.GT : self.__parse_infix_expression,
+            TokenType.LT_EQ : self.__parse_infix_expression,
+            TokenType.GT_EQ : self.__parse_infix_expression
         }
 
         self.__next_token()
@@ -101,6 +116,8 @@ class Parser:
 
     #region statments methods
     def __parse_statement(self) ->Statement:
+        if self.cur_token.type == TokenType.IDENT and self.__peek_token_is(TokenType.EQ):
+            return self.__parse_assignment_statement()
         match self.cur_token.type:
             case TokenType.LET:
                 return self.__parse_let_statement()
@@ -176,6 +193,76 @@ class Parser:
             self.__next_token()
             
         return block_stmt
+
+    # def __parse_block_statement(self) -> BlockStatement:
+    #     block_stmt = BlockStatement()
+
+    #     self.__next_token()
+
+    #     while not self.__current_token_is(TokenType.RBRACE) and not self.__current_token_is(TokenType.EOF):
+    #         stmt = self.__parse_statement()
+
+    #         if stmt is not None:
+    #             block_stmt.statements.append(stmt)
+
+    #         # REMOVE this next_token
+    #         # self.__next_token()
+
+    #     return block_stmt
+    
+    # def __parse_assignment_statement(self) -> AssignStatement:
+    #     stmt: AssignStatement = AssignStatement()
+
+    #     stmt.ident = IdentifierLiteral(value = self.cur_token.literal)
+
+    #     self.__next_token()
+    #     self.__next_token()
+
+    #     stmt.right_value = self.__parse_expression(PrecedenceType.P_LOWEST)
+    #     self.__next_token()
+
+    #     return stmt 
+    def __parse_assignment_statement(self) -> AssignStatement:
+        stmt = AssignStatement()
+
+        stmt.ident = IdentifierLiteral(value=self.cur_token.literal)
+
+        if not self.__expect_peek(TokenType.EQ):
+            return None
+
+        self.__next_token()
+
+        stmt.right_value = self.__parse_expression(PrecedenceType.P_LOWEST)
+
+        if self.__peek_token_is(TokenType.SEMICOLON):
+            self.__next_token()
+
+        return stmt
+    
+    def __parse_if_statement(self) ->IfStatement:
+        condition: Expression = None
+        consequence: BlockStatement = None
+        alternative: BlockStatement = None
+
+        self.__next_token()
+
+        condition = self.__parse_expression(PrecedenceType.P_LOWEST)
+        if not self.__expect_peek(TokenType.LBRACE):
+            return None
+        
+        consequence = self.__parse_block_statement()
+
+        if self.__peek_token_is(TokenType.ELSE):
+            self.__next_token()
+
+            if not self.__expect_peek(TokenType.LBRACE):
+                return None
+            
+            alternative = self.__parse_block_statement()
+
+        return IfStatement(condition , consequence , alternative)
+
+
     
 #end region
 
@@ -210,55 +297,55 @@ class Parser:
 
         return infix_epxr
     
-    # def __parse_let_statement (self) ->LetStatement:
-    #     stmt: LetStatement = LetStatement()
-        
-    #     if not self.__expect_peek(TokenType.IDENT):
-    #         return None
-        
-    #     stmt.name = IdentifierLiteral(value=self.cur_token.literal)
-    #     if not self.__expect_peek(TokenType.COLON):
-    #         return None
-        
-    #     if not self.__expect_peek(TokenType.TYPE):
-    #         return None
-        
-    #     stmt.value_type = self.cur_token.literal
-        
-    #     if not self.__expect_peek(TokenType.EQ):
-    #         return None
-        
-    #     self.__next_token()
-        
-    #     stmt.value = self.__parse_expression(PrecedenceType.P_LOWEST)
-        
-    #     while not self.__current_token_is(TokenType.SEMICOLON)and not self.__current_token_is(TokenType.EOF):
-    #         self.__next_token()
-        
-    #     # if self.__peek_token_is(TokenType.SEMICOLON):
-    #     #     self.__next_token()
-            
-    #     return stmt 
-    
-    def __parse_let_statement(self) -> LetStatement:
+    def __parse_let_statement (self) ->LetStatement:
         stmt: LetStatement = LetStatement()
-
+        
         if not self.__expect_peek(TokenType.IDENT):
             return None
-
+        
         stmt.name = IdentifierLiteral(value=self.cur_token.literal)
-
+        if not self.__expect_peek(TokenType.COLON):
+            return None
+        
+        if not self.__expect_peek(TokenType.TYPE):
+            return None
+        
+        stmt.value_type = self.cur_token.literal
+        
         if not self.__expect_peek(TokenType.EQ):
             return None
-
+        
         self.__next_token()
-
+        
         stmt.value = self.__parse_expression(PrecedenceType.P_LOWEST)
-
+        
+        # while not self.__current_token_is(TokenType.SEMICOLON)and not self.__current_token_is(TokenType.EOF):
+        #     self.__next_token()
+        
         if self.__peek_token_is(TokenType.SEMICOLON):
             self.__next_token()
+            
+        return stmt 
+    
+    # def __parse_let_statement(self) -> LetStatement:
+    #     stmt: LetStatement = LetStatement()
 
-        return stmt
+    #     if not self.__expect_peek(TokenType.IDENT):
+    #         return None
+
+    #     stmt.name = IdentifierLiteral(value=self.cur_token.literal)
+
+    #     if not self.__expect_peek(TokenType.EQ):
+    #         return None
+
+    #     self.__next_token()
+
+    #     stmt.value = self.__parse_expression(PrecedenceType.P_LOWEST)
+
+    #     if self.__peek_token_is(TokenType.SEMICOLON):
+    #         self.__next_token()
+
+    #     return stmt
 
     def __parse_grouped_expression (self) ->Expression:
         self.__next_token()
@@ -302,6 +389,9 @@ class Parser:
             return None
         
         return float_lit
+    
+    def __parse_boolean(self)-> BooleanLiteral:
+        return BooleanLiteral(value = self.__current_token_is(TokenType.TRUE))
     
     def __peek_precedence(self) -> PrecedenceType:
         return PRECEDENCES.get(self.peek_token.type, PrecedenceType.P_LOWEST)

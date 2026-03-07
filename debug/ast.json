@@ -23,13 +23,56 @@
                                 "type": "IntegerLiteral",
                                 "value": 4
                             },
-                            "value_type": null
+                            "value_type": "ank"
                         },
                         {
-                            "type": "ReturnStatement",
-                            "return_value": {
-                                "type": "IdentifierLiteral",
-                                "value": "a"
+                            "type": "ExpressionStatement",
+                            "expression": {
+                                "type": "IfStatement",
+                                "condition": {
+                                    "type": "InfixExpression",
+                                    "left": {
+                                        "type": "IdentifierLiteral",
+                                        "value": "a"
+                                    },
+                                    "operator": "<",
+                                    "right": {
+                                        "type": "IntegerLiteral",
+                                        "value": 5
+                                    }
+                                },
+                                "consequence": {
+                                    "type": "BlockStatement",
+                                    "statements": [
+                                        {
+                                            "type": "ReturnStatement",
+                                            "return_value": {
+                                                "type": "IdentifierLiteral",
+                                                "value": "a"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "alternative": {
+                                    "type": "BlockStatement",
+                                    "statements": [
+                                        {
+                                            "type": "ReturnStatement",
+                                            "return_value": {
+                                                "type": "InfixExpression",
+                                                "left": {
+                                                    "type": "IdentifierLiteral",
+                                                    "value": "a"
+                                                },
+                                                "operator": "*",
+                                                "right": {
+                                                    "type": "IntegerLiteral",
+                                                    "value": 5
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
                             }
                         }
                     ]

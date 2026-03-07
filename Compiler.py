@@ -1,8 +1,8 @@
 from llvmlite import ir 
 from AST import Node, NodeType, Program,Expression,Statement
-from AST import ExpressionStatement, LetStatement, BlockStatement, FunctionStatement , ReturnStatement
+from AST import ExpressionStatement, LetStatement, BlockStatement, FunctionStatement , ReturnStatement, AssignStatement , IfStatement
 from AST import InfixExpression
-from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral
+from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral , BooleanLiteral
 from Environment import Environment
 
 class Compiler:
@@ -10,8 +10,10 @@ class Compiler:
         self.type_map: dict[str, ir.Type] = {
             'int': ir.IntType(32),
             'float': ir.FloatType(),
+            'bool':ir.IntType(1),
             'ank': ir.IntType(32),      
-            'dashamlav': ir.FloatType() 
+            'dashamlav': ir.FloatType(),
+            'stithi':ir.IntType(1)
         }
         
         self.module : ir.Module = ir.Module('mukhya')
@@ -19,6 +21,28 @@ class Compiler:
         self.builder: ir.IRBuilder = ir.IRBuilder()
         
         self.env:Environment = Environment()
+
+        self.errors: list[str]= []
+
+        self.__initialize_builtins()
+
+    def __initialize_builtins(self) -> None:
+        def __init_booleans() -> tuple[ir.GlobalVariable , ir.GlobalVariable]:
+            bool_type: ir.Type = self.type_map['bool']
+
+            true_var = ir.GlobalVariable(self.module, bool_type , 'true')
+            true_var.initializer = ir.Constant(bool_type,1)
+            true_var.global_constant = True
+
+            false_var = ir.GlobalVariable(self.module, bool_type , 'false')
+            false_var.initializer = ir.Constant(bool_type,0)
+            false_var.global_constant = True
+
+            return true_var, false_var
+        
+        true_var , false_var = __init_booleans()
+        self.env.define('true' , true_var , true_var.type)
+        self.env.define('false' , false_var , false_var.type)
         
     def compile(self, node:Node) -> None:
         match node.type():
@@ -36,6 +60,11 @@ class Compiler:
                 self.__visit_block_statement(node)
             case NodeType.ReturnStatement:
                 self.__visit_return_statement(node)
+            case NodeType.AssignStatement:
+                self.__visit_assign_statement(node)
+            case NodeType.IfStatement:
+                self.__visit_if_statement(node)
+
                 
             #Expressions
             case NodeType.InfixExpression:
@@ -128,9 +157,53 @@ class Compiler:
         self.env.define(name , func , return_type)
         
         self.compile(body)
+
+
+        #this part was added in the if-else statement section. Check all round functionality 
+        if not self.builder.block.is_terminated:
+            if isinstance(return_type, ir.IntType):
+                self.builder.ret(ir.Constant(return_type, 0))
+            elif isinstance(return_type, ir.FloatType):
+                self.builder.ret(ir.Constant(return_type, 0.0))
+            else:
+                self.builder.ret_void()
+
+
         self.env = previous_env
         self.env.define(name , func , return_type)
         self.builder = previous_builder
+
+    def __visit_assign_statement(self , node: AssignStatement) -> None:
+        name: str = node.ident.value
+        value: Expression = node.right_value
+
+        value , Type = self.__resolve_value(value)
+
+        if self.env.lookup(name) is None:
+            self.errors.append(f"COMPILE ERROR: Identifier: {name} has not been declared before it was re assigned")
+        else:
+            ptr,_ = self.env.lookup(name)
+            self.builder.store(value, ptr)
+
+    def __visit_if_statement(self, node: IfStatement)-> None:
+        condition = node.condition
+        consequence = node.consequence
+        alternative = node.alternative
+
+        test, _ = self.__resolve_value(condition)
+
+        if alternative is None:
+            with self.builder.if_then(test):
+                self.compile(consequence)
+        else:
+            with self.builder.if_else(test) as (true, otherwise):
+
+
+                with true:
+                    self.compile(consequence)
+
+                with otherwise:
+                    self.compile(alternative)
         
     def __visit_infix_expression(self , node:InfixExpression)->None:
         operator:str = node.operator
@@ -155,6 +228,21 @@ class Compiler:
                 case '^':
                     #TODO
                     pass
+                case '<':
+                    value = self.builder.icmp_signed('<', left_value , right_value)
+                    Type = ir.IntType(1)
+                case '<=':
+                    value = self.builder.icmp_signed('<=', left_value , right_value)
+                    Type = ir.IntType(1)
+                case '>':
+                    value = self.builder.icmp_signed('>', left_value , right_value)
+                    Type = ir.IntType(1)
+                case '>=':
+                    value = self.builder.icmp_signed('>=', left_value , right_value)
+                    Type = ir.IntType(1)
+                case '==':
+                    value = self.builder.icmp_signed('==', left_value , right_value)
+                    Type = ir.IntType(1)
         elif isinstance(right_type, ir.FloatType) and isinstance(left_type, ir.FloatType):
             Type = ir.FloatType()
             match operator:
@@ -171,6 +259,22 @@ class Compiler:
                 case '^':
                     #TODO
                     pass
+                case '<':
+                    value = self.builder.fcmp_ordered('<', left_value , right_value)
+                    Type = ir.IntType(1)
+                case '<=':
+                    value = self.builder.fcmp_ordered('<=', left_value , right_value)
+                    Type = ir.IntType(1)
+                case '>':
+                    value = self.builder.fcmp_ordered('>', left_value , right_value)
+                    Type = ir.IntType(1)
+                case '>=':
+                    value = self.builder.fcmp_ordered('>=', left_value , right_value)
+                    Type = ir.IntType(1)
+                case '==':
+                    value = self.builder.fcmp_ordered('==', left_value , right_value)
+                    Type = ir.IntType(1)
+                
             
                     
                     
@@ -194,6 +298,9 @@ class Compiler:
                 node:IdentifierLiteral = node
                 ptr , Type = self.env.lookup(node.value)
                 return self.builder.load(ptr), Type
+            case NodeType.BooleanLiteral:
+                node: BooleanLiteral= node
+                return ir.Constant(ir.IntType(1), 1 if node.value else 0) , ir.IntType(1)
             case NodeType.InfixExpression:
                 return self.__visit_infix_expression(node)
         #end region

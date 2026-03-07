@@ -1,4 +1,8 @@
-kaarya mukhya() -> ank{
-    maanlo a barabar 4 ant
-    wapis a ant
+kaarya mukhya() -> ank {
+    maanlo a : ank  barabar 4 ant
+    agar ( a < 5){
+        wapis a ant
+    }
+    warna { wapis a*5 ant}
+
 }

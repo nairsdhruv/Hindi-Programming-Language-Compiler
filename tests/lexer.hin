@@ -1,4 +1,6 @@
 kaarya mukhya() -> ank {
-    maanlo a barabar 4 ant
-    wapis a
+    maanlo a : ank  barabar 4 ant
+    a barabar 5 ant
+
+    wapis a ant
 }

@@ -41,7 +41,7 @@ class Lexer:
     def __is_digit(self, char: str) -> bool:
         return char.isdigit()
     
-    def __is_letter(Self, ch:str)->bool:
+    def __is_letter(self, ch:str)->bool:
         return 'a'<=ch and ch <= 'z' or 'A' <= ch and ch <='Z' or ch =='_'
 
     def __read_number(self) -> Token:
@@ -90,8 +90,30 @@ class Lexer:
                 tok = self.__new_token(TokenType.SLASH, self.current_char)
             case '%':
                 tok = self.__new_token(TokenType.MODULUS, self.current_char)
+            case '<':
+                if self.__peek_char() == '=':
+                    ch = self.current_char
+                    self.__read_char()
+                    tok = self.__new_token(TokenType.LT_EQ , ch + self.current_char)
+                else:
+                    tok = self.__new_token(TokenType.LT ,  self.current_char)
+            case '>':
+                if self.__peek_char() == '=':
+                    ch = self.current_char
+                    self.__read_char()
+                    tok = self.__new_token(TokenType.GT_EQ , ch+ self.current_char)
+                else:
+                    tok = self.__new_token(TokenType.GT ,  self.current_char)
             case '=':
-                tok = self.__new_token(TokenType.EQ, self.current_char)
+                if self.__peek_char() == '=':
+                    ch = self.current_char
+                    self.__read_char()
+                    tok = self.__new_token(TokenType.EQ_EQ ,ch + self.current_char)
+                else:
+                    tok = self.__new_token(TokenType.EQ , self.current_char)
+           
+            # case '=':
+            #     tok = self.__new_token(TokenType.EQ, self.current_char)
             case ':':
                 tok = self.__new_token(TokenType.COLON, self.current_char)
             case ';':
