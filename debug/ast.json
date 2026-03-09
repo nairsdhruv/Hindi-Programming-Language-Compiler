@@ -6,6 +6,48 @@
                 "type": "FunctionStatement",
                 "name": {
                     "type": "IdentifierLiteral",
+                    "value": "jodo"
+                },
+                "return_type": "ank",
+                "parameters": [
+                    {
+                        "type": "FunctionParamter",
+                        "name": "a",
+                        "value_type": "ank"
+                    },
+                    {
+                        "type": "FunctionParamter",
+                        "name": "b",
+                        "value_type": "ank"
+                    }
+                ],
+                "body": {
+                    "type": "BlockStatement",
+                    "statements": [
+                        {
+                            "type": "ReturnStatement",
+                            "return_value": {
+                                "type": "InfixExpression",
+                                "left": {
+                                    "type": "IdentifierLiteral",
+                                    "value": "a"
+                                },
+                                "operator": "+",
+                                "right": {
+                                    "type": "IdentifierLiteral",
+                                    "value": "b"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "FunctionStatement": {
+                "type": "FunctionStatement",
+                "name": {
+                    "type": "IdentifierLiteral",
                     "value": "mukhya"
                 },
                 "return_type": "ank",
@@ -14,65 +56,23 @@
                     "type": "BlockStatement",
                     "statements": [
                         {
-                            "type": "LetStatement",
-                            "name": {
-                                "type": "IdentifierLiteral",
-                                "value": "a"
-                            },
-                            "value": {
-                                "type": "IntegerLiteral",
-                                "value": 4
-                            },
-                            "value_type": "ank"
-                        },
-                        {
-                            "type": "ExpressionStatement",
-                            "expression": {
-                                "type": "IfStatement",
-                                "condition": {
-                                    "type": "InfixExpression",
-                                    "left": {
-                                        "type": "IdentifierLiteral",
-                                        "value": "a"
-                                    },
-                                    "operator": "<",
-                                    "right": {
+                            "type": "ReturnStatement",
+                            "return_value": {
+                                "type": "CallExpression",
+                                "function": {
+                                    "type": "IdentifierLiteral",
+                                    "value": "jodo"
+                                },
+                                "arguments": [
+                                    {
                                         "type": "IntegerLiteral",
-                                        "value": 5
+                                        "value": 1
+                                    },
+                                    {
+                                        "type": "IntegerLiteral",
+                                        "value": 2
                                     }
-                                },
-                                "consequence": {
-                                    "type": "BlockStatement",
-                                    "statements": [
-                                        {
-                                            "type": "ReturnStatement",
-                                            "return_value": {
-                                                "type": "IdentifierLiteral",
-                                                "value": "a"
-                                            }
-                                        }
-                                    ]
-                                },
-                                "alternative": {
-                                    "type": "BlockStatement",
-                                    "statements": [
-                                        {
-                                            "type": "ReturnStatement",
-                                            "return_value": {
-                                                "type": "InfixExpression",
-                                                "left": {
-                                                    "type": "IdentifierLiteral",
-                                                    "value": "a"
-                                                },
-                                                "operator": "*",
-                                                "right": {
-                                                    "type": "IntegerLiteral",
-                                                    "value": 5
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
+                                ]
                             }
                         }
                     ]

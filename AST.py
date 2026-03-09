@@ -13,12 +13,15 @@ class NodeType(Enum):
     IfStatement = "IfStatement"
 
     InfixExpression = "InfixExpression"
+    CallExpression = "CallExpression"
 
     IntegerLiteral = "IntegerLiteral"
 
     FloatLiteral = "FloatLiteral"
     IdentifierLiteral = "IdentifierLiteral"
     BooleanLiteral = "BooleanLiteral"
+
+    FunctionParamter = "FunctionParamter"
 
 
 class Node(ABC):
@@ -49,6 +52,21 @@ class Program(Node):
             "statements": [{stat.type().value: stat.json()} for stat in self.statements]
         }
     
+class FunctionParamter(Expression):
+    def __init__(self , name: str , value_type : str = None) -> None:
+        self.name = name
+        self.value_type = value_type
+
+    def type(json) -> NodeType:
+        return NodeType.FunctionParamter
+    
+    def json(self) -> dict:
+        return{
+            "type": self.type().value,
+            "name": self.name,
+            "value_type":self.value_type
+        }
+    
 #region Expression Statements
 
 class ExpressionStatement(Statement):
@@ -62,6 +80,21 @@ class ExpressionStatement(Statement):
         return {
             "type": self.type().value,
             "expression": self.expression.json() if self.expression else None
+        }
+    
+class CallExpression(Expression):
+    def __init__(self , function: Expression = None , arguments:list[Expression] = None) ->None:
+        self.function = function
+        self.arguments = arguments if arguments is not None else []
+
+    def type(self) -> NodeType:
+        return NodeType.CallExpression
+    
+    def json(self) -> dict:
+        return{
+            "type": self.type().value,
+            "function": self.function.json(),
+            "arguments":[arg.json() for arg in self.arguments]
         }
 #endregion
 
@@ -110,7 +143,7 @@ class ReturnStatement(Statement):
         }
         
 class FunctionStatement(Statement):
-    def __init__(self, parameters:list = [], body: BlockStatement= None , name = None, return_type: str = None)-> None:
+    def __init__(self, parameters:list = [FunctionParamter], body: BlockStatement= None , name = None, return_type: str = None)-> None:
         self.parameters = parameters
         self.body = body
         self.name = name

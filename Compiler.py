@@ -1,8 +1,10 @@
 from llvmlite import ir 
 from AST import Node, NodeType, Program,Expression,Statement
 from AST import ExpressionStatement, LetStatement, BlockStatement, FunctionStatement , ReturnStatement, AssignStatement , IfStatement
-from AST import InfixExpression
+from AST import InfixExpression, CallExpression
 from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral , BooleanLiteral
+from AST import FunctionParamter
+
 from Environment import Environment
 
 class Compiler:
@@ -69,13 +71,32 @@ class Compiler:
             #Expressions
             case NodeType.InfixExpression:
                 return self.__visit_infix_expression(node)
+            case NodeType.CallExpression:
+                return self.__visit_call_expression(node)
             
             case NodeType.IntegerLiteral | NodeType.FloatLiteral:
                 return self.__resolve_value(node)   
                     
 #region visit methods
     def __visit_program(self,node:Program) ->None:
-        # func_name: str = "main"
+
+        for stmt in node.statements:
+            if isinstance(stmt, FunctionStatement):
+
+                name = stmt.name.value
+                return_type = self.type_map[stmt.return_type]
+
+                params = stmt.parameters
+                param_types = [self.type_map[p.value_type] for p in params]
+
+                fnty = ir.FunctionType(return_type, param_types)
+                func = ir.Function(self.module, fnty, name=name)
+
+                self.env.define(name, func, return_type)
+
+        for stmt in node.statements:
+            self.compile(stmt)
+        # func_name: str = "mukhya"
         # param_types: list [ir.Type] = {}
         # return_type :ir.Type = self.type_map["int"]
         
@@ -89,9 +110,21 @@ class Compiler:
         # self.builder = ir.IRBuilder(block )
         
         # last_value = None
+
+        # for stmt in node.statements:
+        #     if isinstance(stmt, FunctionStatement):
+        #         fn = stmt["FunctionStatement"]
+
+        #         name = fn.name.value
+        #         ret_type = self.__resolve_type(fn.return_type)
+
+        #         func_type = ir.FunctionType(ret_type, [])
+        #         func = ir.Function(self.module, func_type, name=name)
+
+        #         self.env.define(name, func, ret_type)
         
-        for stmt in node.statements:
-            last_value = self.compile(stmt)
+        # for stmt in node.statements:
+        #     last_value = self.compile(stmt)
             
         # if last_value is not None:
         #     value, _ = last_value
@@ -137,23 +170,37 @@ class Compiler:
     def __visit_function_statement(self, node:FunctionStatement)->None:
         name: str = node.name.value
         body: BlockStatement = node.body
-        params: list[IdentifierLiteral] = node.parameters
+        params: list[FunctionParamter] = node.parameters
         
-        param_names: list[str] = [p.value for p in params]
-        
-        param_types: list[ir.Type] = [] #TODO
+        param_names: list[str] = [p.name for p in params]
+
+        param_types: list[ir.Type] = [self.type_map[p.value_type] for p in params] 
         
         return_type:ir.Type = self.type_map[node.return_type]
         
         fnty: ir.FunctionType = ir.FunctionType(return_type, param_types)
-        func: ir.Function = ir.Function(self.module, fnty , name=name)
+        func, _ = self.env.lookup(name)
         
         block: ir.Block= func.append_basic_block(f"{name}_entry")
         previous_builder = self.builder
         
         self.builder = ir.IRBuilder(block)
+
+        params_ptr =[]
+        for i , typ in enumerate(param_types):
+            ptr = self.builder.alloca(typ)
+            self.builder.store(func.args[i], ptr)
+            params_ptr.append(ptr)
+
         previous_env = self.env
-        self.env = Environment(parent= self.env)
+        self.env = Environment(parent= previous_env)
+
+        for i , x in enumerate(zip(param_types, param_names)): 
+            typ = param_types[i]
+            ptr = params_ptr[i]
+           
+            self.env.define(x[1], ptr , typ)
+
         self.env.define(name , func , return_type)
         
         self.compile(body)
@@ -279,6 +326,30 @@ class Compiler:
                     
                     
         return value , Type
+    
+    def __visit_call_expression(self, node:CallExpression) -> tuple[ir.Instruction, ir.Type]:
+        name:str = node.function.value
+        params: list[Expression] = node.arguments
+
+        args = []
+        types = []
+        if len(params) > 0:
+            for x in params:
+                p_val , p_type = self.__resolve_value(x)
+                args.append(p_val)
+                types.append(p_type)
+
+        match name:
+            case _:
+                result = self.env.lookup(name)
+
+                if result is None:
+                    raise Exception(f"Undefined function: {name}")
+
+                func, ret_type = result
+                ret = self.builder.call(func, args)
+        
+        return ret, ret_type
         
     #endrgion
     
@@ -303,4 +374,6 @@ class Compiler:
                 return ir.Constant(ir.IntType(1), 1 if node.value else 0) , ir.IntType(1)
             case NodeType.InfixExpression:
                 return self.__visit_infix_expression(node)
+            case NodeType.CallExpression:
+                return self.__visit_call_expression(node)
         #end region

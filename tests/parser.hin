@@ -1,8 +1,7 @@
+kaarya jodo ( a: ank , b : ank) -> ank{
+    return a + b ant
+}
 kaarya mukhya() -> ank {
-    maanlo a : ank  barabar 4 ant
-    agar ( a < 5){
-        wapis a ant
-    }
-    warna { wapis a*5 ant}
+    wapis jodo( 1 , 2) ant
 
 }

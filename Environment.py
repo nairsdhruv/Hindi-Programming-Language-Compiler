@@ -13,10 +13,10 @@ class Environment:
     def lookup(self , name:str) -> tuple[ir.Value, ir.Type]:
         return self.__resolve(name)
     
-    def __resolve(self, name:str) ->tuple[ir.Value, ir.Type]:
+    def __resolve(self, name:str) ->tuple[ir.Value, ir.Type] | None:
         if name in self.records:
             return self.records[name]
         elif self.parent:
-            self.parent.__resolve(name)
+            return self.parent.__resolve(name)
         else:
             return None
