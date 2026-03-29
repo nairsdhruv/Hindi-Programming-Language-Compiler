@@ -28,31 +28,7 @@ Users can write specifications in **Hindi**, which are automatically translated,
 | `asatya`      | FALSE          | Boolean literal `false`         |
 | `jab`         | WHILE          | While loop statement             |  
 
-An example is shown below:
 
-```hindi
- kaarya mukhya() -> ank {
-maanlo i : ank barabar 1 ant
-jab i <= 10 {
-likho("%d\n", i) ant
-i barabar i + 1 ant
-}
-wapis 0 ant
-}
-
-
-The same can also be written as:
-
-
-कार्य मुख्य() -> अंक {
-
-    मान लो a : अंक = 0 अंत
-    जब a < 10 {
-        लिखो("a = %d \n", a) अंत
-        a बराबर a + 1 अंत
-    }
-
-}
 
 
 - **AI-Assisted Code Generation:** Uses Google Gemini to convert Hindi instructions to Hindi DSL code.  
@@ -76,3 +52,29 @@ The same can also be written as:
 
 ```bash
 pip install llvmlite deep-translator google-genai python-dotenv
+
+
+```hindi
+An example is shown below:
+
+ kaarya mukhya() -> ank {
+maanlo i : ank barabar 1 ant
+jab i <= 10 {
+likho("%d\n", i) ant
+i barabar i + 1 ant
+}
+wapis 0 ant
+}
+
+
+The same can also be written as:
+
+कार्य मुख्य() -> अंक {
+
+    मान लो a : अंक = 0 अंत
+    जब a < 10 {
+        लिखो("a = %d \n", a) अंत
+        a बराबर a + 1 अंत
+    }
+
+}
