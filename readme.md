@@ -43,7 +43,7 @@ wapis 0 ant
 
 The same can also be written as:
 
-```hindi
+
 कार्य मुख्य() -> अंक {
 
     मान लो a : अंक = 0 अंत
