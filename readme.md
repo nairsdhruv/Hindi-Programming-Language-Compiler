@@ -30,6 +30,7 @@ Users can write specifications in **Hindi**, which are automatically translated,
 
 An example is shown below:
 
+```hindi
  kaarya mukhya() -> ank {
 maanlo i : ank barabar 1 ant
 jab i <= 10 {
@@ -37,6 +38,20 @@ likho("%d\n", i) ant
 i barabar i + 1 ant
 }
 wapis 0 ant
+}
+
+
+The same can also be written as:
+
+```hindi
+कार्य मुख्य() -> अंक {
+
+    मान लो a : अंक = 0 अंत
+    जब a < 10 {
+        लिखो("a = %d \n", a) अंत
+        a बराबर a + 1 अंत
+    }
+
 }
 
 
