@@ -11,7 +11,7 @@ class NodeType(Enum):
     ReturnStatement = "ReturnStatement"
     AssignStatement = "AssignStatement"
     IfStatement = "IfStatement"
-
+    WhileStatement = "WhileStatement"
     InfixExpression = "InfixExpression"
     CallExpression = "CallExpression"
 
@@ -20,6 +20,7 @@ class NodeType(Enum):
     FloatLiteral = "FloatLiteral"
     IdentifierLiteral = "IdentifierLiteral"
     BooleanLiteral = "BooleanLiteral"
+    StringLiteral = "StringLiteral"
 
     FunctionParamter = "FunctionParamter"
 
@@ -192,6 +193,22 @@ class IfStatement(Statement):
             "consequence": self.consequence.json(),
             "alternative": self.alternative.json() if self.alternative is not None else None
         }
+    
+
+class WhileStatement(Statement):
+    def __init__(self , condition: Expression = None, body:BlockStatement = None) ->None:
+        self.condition = condition
+        self.body = body 
+
+    def type(self) -> NodeType:
+        return NodeType.WhileStatement
+    
+    def json(self) -> dict:
+        return{
+            "type": self.type().value,
+            "condition": self.condition.json(),
+            "body": self.body.json()
+        }
 
 class InfixExpression(Expression):
     def __init__(self, left_node: Expression, operator: str, right_node: Expression = None) -> None:
@@ -256,6 +273,18 @@ class IdentifierLiteral(Expression):
 
     def type(self) -> NodeType:
         return NodeType.IdentifierLiteral
+    
+    def json(self):
+        return {
+            "type": self.type().value,
+            "value": self.value
+        }
+class StringLiteral(Expression):
+    def __init__(self, value:str = None) -> None:
+        self.value: str = value
+
+    def type(self) -> NodeType:
+        return NodeType.StringLiteral
     
     def json(self):
         return {

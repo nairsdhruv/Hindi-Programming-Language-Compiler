@@ -1,7 +1,0 @@
-kaarya jodo ( a: ank , b : ank) -> ank{
-    return a + b ant
-}
-kaarya mukhya() -> ank {
-    wapis jodo( 1 , 2) ant
-
-}

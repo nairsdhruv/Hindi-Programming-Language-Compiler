@@ -3,6 +3,9 @@ from parser import Parser
 from AST import Program
 import json
 from Compiler import Compiler
+from ai_codegen import generate_hindi_code
+from deep_translator import GoogleTranslator
+
 import time
 
 
@@ -10,14 +13,71 @@ from llvmlite import ir
 import llvmlite.binding as llvm
 from ctypes import CFUNCTYPE, c_int , c_float
 
-LEXER_DEBUG :bool =False
-PARSER_DEBUG : bool = False
+LEXER_DEBUG :bool =True
+PARSER_DEBUG : bool = True
 COMPILER_DEBUG: bool = True
 RUN_CODE:bool = True 
 
 if __name__ == "__main__":
-    with open ("tests/parser.hin", "r") as f:
-        code: str = f.read()
+    # with open ("tests/parser.hin", "r") as f:
+    #     code: str = f.read()
+
+    mode = input("Choose mode (1=file, 2=AI): ")
+
+    if mode == "1":
+        with open("tests/original.hin", "r", encoding="utf-8") as f:
+            code = f.read()
+
+        keyword_map = {
+            "कार्य": "kaarya",
+            "मुख्य": "mukhya",
+            "अंक": "ank",
+            "मान लो": "maanlo",
+            "जब": "jab",
+            "लिखो": "likho",
+            "बराबर": "barabar",
+            "अंत": "ant"
+        }
+
+        # 2. Replace Hindi keywords with English
+        english_dsl = code
+        for hi, en in keyword_map.items():
+            english_dsl = english_dsl.replace(hi, en)
+
+        print("=== English DSL ===")
+        print(english_dsl)
+
+        code = english_dsl
+
+    elif mode == "2":
+        with open("input.txt", "r", encoding="utf-8") as f:
+            text = f.read()
+
+        # Translate text to English
+        translated_text = GoogleTranslator(source='auto', target='en').translate(text)
+
+        # Save translated text
+        with open("eng_input.txt", "w", encoding="utf-8") as f:
+            f.write(translated_text)
+
+
+        with open("eng_input.txt", "r", encoding="utf-8") as f:
+            user_prompt = f.read()
+
+        #print(user_prompt)
+
+        code = generate_hindi_code(user_prompt)
+
+        print("\n=== GENERATED CODE ===\n")
+        print(code)
+
+
+        with open("tests/generated.hin", "w", encoding="utf-8") as f:
+            f.write(code)
+
+    else:
+        print("Invalid choice")
+        exit(1)
     
     if LEXER_DEBUG:
         print("===LEXER DEBUG===")
@@ -79,3 +139,10 @@ if __name__ == "__main__":
         et = time.time()
         
         print(f"\n Program Returned: {result} \n === Executed in {round((et-st)*1000, 6)} ms. ===")
+
+
+
+
+
+
+

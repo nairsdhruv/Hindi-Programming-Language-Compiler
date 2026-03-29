@@ -6,7 +6,8 @@ from enum import Enum, auto
 from AST import Statement, Expression , Program
 from AST import ExpressionStatement, LetStatement, FunctionStatement,  ReturnStatement, BlockStatement, AssignStatement , IfStatement
 from AST import InfixExpression, CallExpression
-from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral
+from AST import WhileStatement
+from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral, BooleanLiteral , StringLiteral
 from AST import FunctionParamter
 #Prodecure types
 class PrecedenceType(Enum):
@@ -53,6 +54,7 @@ class Parser:
             TokenType.IF: self.__parse_if_statement,
             TokenType.TRUE: self.__parse_boolean,
             TokenType.FALSE: self.__parse_boolean,
+            TokenType.STRING : self.__parse_string_literal,
         }
         self.infix_parse_fns: dict[TokenType, Callable] = {
             TokenType.PLUS: self.__parse_infix_expression,
@@ -127,6 +129,8 @@ class Parser:
                 return self.__parse_function_statement()
             case TokenType.RETURN:
                 return self.__parse_return_statement()
+            case TokenType.WHILE:
+                return self.__parse_while_statement()
             case _:
                 return self.__parse_expression_statement()
     def __parse_expression_statement(self) -> ExpressionStatement:
@@ -299,7 +303,20 @@ class Parser:
         return IfStatement(condition , consequence , alternative)
 
 
-    
+    def __parse_while_statement(self ) -> WhileStatement:
+        condition: Expression = None
+        body: BlockStatement = None
+
+
+        self.__next_token()
+        condition = self.__parse_expression(PrecedenceType.P_LOWEST)
+
+        if not self.__expect_peek(TokenType.LBRACE):
+            return None
+        
+        body = self.__parse_block_statement()
+
+        return WhileStatement(condition= condition, body = body )
 #end region
 
 #expression methods region
@@ -462,3 +479,6 @@ class Parser:
 
     def __current_precedence(self) -> PrecedenceType:
         return PRECEDENCES.get(self.cur_token.type, PrecedenceType.P_LOWEST)
+
+    def __parse_string_literal(self) -> StringLiteral:
+        return StringLiteral(value= self.cur_token.literal)

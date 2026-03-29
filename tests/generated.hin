@@ -1,0 +1,8 @@
+kaarya mukhya() -> ank {
+maanlo i : ank barabar 1 ant
+jab i <= 10 {
+likho("%d\n", i) ant
+i barabar i + 1 ant
+}
+wapis 0 ant
+}

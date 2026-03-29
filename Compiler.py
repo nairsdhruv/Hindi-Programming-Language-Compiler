@@ -2,7 +2,8 @@ from llvmlite import ir
 from AST import Node, NodeType, Program,Expression,Statement
 from AST import ExpressionStatement, LetStatement, BlockStatement, FunctionStatement , ReturnStatement, AssignStatement , IfStatement
 from AST import InfixExpression, CallExpression
-from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral , BooleanLiteral
+from AST import WhileStatement
+from AST import IntegerLiteral, FloatLiteral, IdentifierLiteral , BooleanLiteral, StringLiteral
 from AST import FunctionParamter
 
 from Environment import Environment
@@ -15,7 +16,11 @@ class Compiler:
             'bool':ir.IntType(1),
             'ank': ir.IntType(32),      
             'dashamlav': ir.FloatType(),
-            'stithi':ir.IntType(1)
+            'stithi':ir.IntType(1),
+            'str' : ir.PointerType(ir.IntType(8)),
+            'vakya' : ir.PointerType(ir.IntType(8)),
+            'void' : ir.VoidType(),
+            'khali' : ir.VoidType(),
         }
         
         self.module : ir.Module = ir.Module('mukhya')
@@ -24,11 +29,20 @@ class Compiler:
         
         self.env:Environment = Environment()
 
+        #added for incerement counter
+        self.counter = 0
+
         self.errors: list[str]= []
 
         self.__initialize_builtins()
 
     def __initialize_builtins(self) -> None:
+        def __init_print() -> ir.Function:
+            fnty: ir.FunctionType = ir.FunctionType(
+                self.type_map['int'],[ir.IntType(8).as_pointer()],
+                var_arg=True
+            )
+            return ir.Function(self.module , fnty , 'printf')
         def __init_booleans() -> tuple[ir.GlobalVariable , ir.GlobalVariable]:
             bool_type: ir.Type = self.type_map['bool']
 
@@ -41,6 +55,9 @@ class Compiler:
             false_var.global_constant = True
 
             return true_var, false_var
+        
+        # this can be named anything her according to hindi word likho
+        self.env.define('likho' , __init_print() , ir.IntType(32))
         
         true_var , false_var = __init_booleans()
         self.env.define('true' , true_var , true_var.type)
@@ -66,6 +83,8 @@ class Compiler:
                 self.__visit_assign_statement(node)
             case NodeType.IfStatement:
                 self.__visit_if_statement(node)
+            case NodeType.WhileStatement:
+                self.__visit_while_statement(node)
 
                 
             #Expressions
@@ -142,7 +161,7 @@ class Compiler:
     def __visit_let_statement(self, node: LetStatement) -> None:
         name:str = node.name.value
         value:Expression = node.value
-        value_type:str = node.value_type #TODO
+        value_type:str = node.value_type 
         
         value, Type = self.__resolve_value(node= value)
         
@@ -340,6 +359,9 @@ class Compiler:
                 types.append(p_type)
 
         match name:
+            case 'likho':
+                ret = self.builting_printf(params =args , return_type=types[0])
+                ret_type = self.type_map['int']
             case _:
                 result = self.env.lookup(name)
 
@@ -350,6 +372,26 @@ class Compiler:
                 ret = self.builder.call(func, args)
         
         return ret, ret_type
+    
+    def __visit_while_statement(self , node:WhileStatement) -> None:
+        condition: Expression = node.condition
+        body : BlockStatement = node.body
+
+        test, _ = self.__resolve_value(condition)
+
+        while_loop_entry = self.builder.append_basic_block(f"while_loop_entry_{self.__increment_counter()}")
+
+        while_loop_otherwise = self.builder.append_basic_block(f"while_loop_otherwise_{self.counter}")
+
+        self.builder.cbranch(test , while_loop_entry , while_loop_otherwise)
+        self.builder.position_at_start(while_loop_entry)
+
+        self.compile(body)
+
+        test , _ = self.__resolve_value(condition)
+
+        self.builder.cbranch(test , while_loop_entry , while_loop_otherwise)
+        self.builder.position_at_start(while_loop_otherwise)
         
     #endrgion
     
@@ -372,8 +414,82 @@ class Compiler:
             case NodeType.BooleanLiteral:
                 node: BooleanLiteral= node
                 return ir.Constant(ir.IntType(1), 1 if node.value else 0) , ir.IntType(1)
+            case NodeType.StringLiteral:
+                node : StringLiteral = node
+                string , Type= self.__convert_string(node.value)
+                return string , Type
             case NodeType.InfixExpression:
                 return self.__visit_infix_expression(node)
             case NodeType.CallExpression:
                 return self.__visit_call_expression(node)
-        #end region
+            
+
+    # def __convert_string(self , string:str) -> tuple[ir.Constant , ir.ArrayType]:
+    #     string = string.replace("\\n", "\n\0")
+
+    #     fnt: str = f"{string}\0"
+    #     c_fnt : ir.Constant = ir.Constant(ir.ArrayType(ir.IntType(8), len(fnt)), bytearray(fnt.encode("utf8")))
+    #     global_fnt= ir.GlobalVariable(self.module , c_fnt.type, name =f'__str_{self.__increment_counter()}')
+    #     global_fnt.linkage = 'internal'
+    #     global_fnt.global_constant = True
+    #     global_fnt.initializer = c_fnt
+
+    #     return global_fnt , global_fnt.type
+
+    def __convert_string(self , string:str) -> tuple[ir.Value , ir.Type]:
+
+        string = string.replace("\\n", "\n")
+
+        fnt = f"{string}\0"
+
+        c_str = ir.Constant(
+            ir.ArrayType(ir.IntType(8), len(fnt)),
+            bytearray(fnt.encode("utf8"))
+        )
+
+        global_str = ir.GlobalVariable(
+            self.module,
+            c_str.type,
+            name=f'__str_{self.__increment_counter()}'
+        )
+
+        global_str.linkage = 'internal'
+        global_str.global_constant = True
+        global_str.initializer = c_str
+
+        # pointer to first element
+        zero = ir.Constant(ir.IntType(32), 0)
+
+        str_ptr = self.builder.gep(global_str, [zero, zero], inbounds=True)
+
+        return str_ptr, ir.IntType(8).as_pointer()
+
+    # def builting_printf(self , params: list[ir.Instruction] , return_type: ir.Type) -> None:
+    #     func , _ = self.env.lookup('likho')
+
+    #     c_str = self.builder.alloca(return_type)
+    #     self.builder.store(params[0] , c_str)
+    #     rest_params = params[1:]
+
+    #     if isinstance(params[0] , ir.LoadInstr):
+    #         c_fnt : ir.LoadInstr = params[0]
+    #         g_var_ptr = c_fnt.operands[0]
+    #         string_val = self.builder.load(g_var_ptr)
+    #         fnt_arg = self.builder.bitcast(string_val , ir.IntType(8).as_pointer())
+    #         return self.builder.call(func ,[fnt_arg , *rest_params])
+    #     else:
+    #         fnt_arg = self.builder.bitcast(self.module.get_global(f"__str_{self.counter}"), ir.IntType(8).as_pointer())
+
+    #         return self.builder.call(func , [fnt_arg , *rest_params])
+
+    def builting_printf(self, params, return_type):
+
+        func, _ = self.env.lookup('likho')   # this is printf
+
+        return self.builder.call(func, params)
+
+
+    def __increment_counter(self) -> int:
+        self.counter += 1
+        return self.counter
+        #end region 

@@ -1,3 +1,5 @@
+import unicodedata
+
 from Token import Token, lookup_ident
 from Token import TokenType
 from typing import Any
@@ -42,7 +44,13 @@ class Lexer:
         return char.isdigit()
     
     def __is_letter(self, ch:str)->bool:
-        return 'a'<=ch and ch <= 'z' or 'A' <= ch and ch <='Z' or ch =='_'
+        # return 'a'<=ch and ch <= 'z' or 'A' <= ch and ch <='Z' or ch =='_'
+         category = unicodedata.category(ch)
+         return (
+                category.startswith('L')   # Letters
+                or category.startswith('M')  # Marks (important for Hindi matras!)
+                or ch == '_'
+            )
 
     def __read_number(self) -> Token:
         start_pos: int = self.position
@@ -120,6 +128,8 @@ class Lexer:
                 tok = self.__new_token(TokenType.COMMA, self.current_char)
             case ';':
                 tok = self.__new_token(TokenType.SEMICOLON, self.current_char)
+            case '"':
+                tok = self.__new_token(TokenType.STRING, self.__read_string())
             case '(':
                 tok = self.__new_token(TokenType.LPAREN, self.current_char)
             case ')':
@@ -147,3 +157,24 @@ class Lexer:
                     )
         self.__read_char()
         return tok
+    
+    # def __read_string(self) ->str:
+    #     position: int = self.position +1
+    #     while True:
+    #         self.__read_char()
+    #         if self.current_char == '"' or self.current_char is None:
+    #             break
+
+    #         string = self.source[position:self.position]
+
+    #     return string
+
+    def __read_string(self) -> str:
+        position = self.position + 1
+
+        while True:
+            self.__read_char()
+            if self.current_char == '"' or self.current_char is None:
+                break
+
+        return self.source[position:self.position]
