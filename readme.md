@@ -52,6 +52,7 @@ Users can write specifications in **Hindi**, which are automatically translated,
 
 ```bash
 pip install llvmlite deep-translator google-genai python-dotenv
+---
 
 
 ```hindi
